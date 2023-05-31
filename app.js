@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js"
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js"
+import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js"
 
 const	inputEl = document.getElementById("input-el");
 const	buttonEl = document.getElementById("button-el");
@@ -15,17 +15,23 @@ const listInDB = ref(database, "Shopping List");
 
 buttonEl.addEventListener("click", function() {
 	const	inputValue = inputEl.value;
-	push(listInDB, inputValue); 
+	if (inputValue) {
+		push(listInDB, inputValue);
+	}
 	clearInput();
 });
 
 onValue(listInDB, function(snapshot) {
+	if (snapshot.exists()) {
 	let listItemsArray = Object.entries(snapshot.val());
-	clearShoppingList();
-	for (let i = 0; i < listItemsArray.length; i++) {
-		let currentItemID = listItemsArray[i][0];
-		let currentItemValue = listItemsArray[i][1];
-		addItemToList(currentItemValue);
+		clearShoppingList();
+		for (let i = 0; i < listItemsArray.length; i++) {
+			let currentItem = listItemsArray[i];
+			addItemToList(currentItem);
+		}
+	}
+	else {
+		shoppingListEl.innerHTML = "No items to see here... Yet";
 	}
 })
 
@@ -39,7 +45,15 @@ function clearInput()
 	inputEl.value = "";
 }
 
-function addItemToList(itemValue)
+function addItemToList(item)
 {
-	shoppingListEl.innerHTML += `<li>${itemValue}</li>`;
+	let itemID = item[0];
+	let itemValue = item[1];
+	let listItem = document.createElement("li");
+	listItem.textContent = itemValue;
+	listItem.addEventListener("click", function() {
+		let locatinOfItemInDB = ref(database, `Shopping List/${itemID}`);
+		remove(locatinOfItemInDB);
+	})
+	shoppingListEl.append(listItem);
 }
